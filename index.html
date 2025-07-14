@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <title>Painel de Reservas -CARNEIRO MERCATTO</title>
+  <title>Painel de Reservas - CARNEIRO MERCATTO</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>
     body { font-family: Arial, sans-serif; margin: 0; background: #f4f4f4; }
@@ -165,7 +165,7 @@ function salvarOuEditar() {
   dataForm.append('ValorAntecipado', document.getElementById('valorAntecipado').value.replace(/\D/g, '')/100);
   dataForm.append('Observacoes', document.getElementById('obs').value);
   dataForm.append('Status', 'Pendente');
-  fetch(https://script.google.com/macros/s/AKfycbwZrQMUe5dhWctefkH2qH-bPfe8zPz7irXlZNDk_U_shU18HZu2RXZkjdANZ6nNGi8/exec, { method: 'POST', body: dataForm }).then(() => { alert("Salvo!"); listarReservas(); });
+  fetch(URL_SCRIPT, { method: 'POST', body: dataForm }).then(() => { alert("Salvo!"); listarReservas(); });
 }
 
 function liquidarReserva(cliente) {
@@ -173,7 +173,7 @@ function liquidarReserva(cliente) {
   const dataForm = new URLSearchParams();
   dataForm.append('tipoFormulario', 'Liquidar');
   dataForm.append('Cliente', cliente);
-  fetch(https://script.google.com/macros/s/AKfycbwZrQMUe5dhWctefkH2qH-bPfe8zPz7irXlZNDk_U_shU18HZu2RXZkjdANZ6nNGi8/exec, { method: 'POST', body: dataForm }).then(() => listarReservas());
+  fetch(URL_SCRIPT, { method: 'POST', body: dataForm }).then(() => listarReservas());
 }
 
 function reabrirReserva(cliente) {
