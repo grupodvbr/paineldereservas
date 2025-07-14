@@ -221,9 +221,10 @@
     }
   });
 
-  function salvarOuEditar() {
-    // Aqui entra seu fetch para o Apps Script (não incluí todo para focar no formato)
-    alert('Reserva salva! (exemplo)');
+ fetch('https://script.google.com/macros/s/AKfycbyJraCPfYv16q7nt1wv1fCj__zoNmC1oJ2c0D_1bfiXXodwIfqufK5oMzOgBEpMi4EO/exec', { method: 'POST', body: dataForm })
+    .then(r => r.text())
+    .then(() => {
+      alert("Reserva salva!");
   }
 </script>
 
