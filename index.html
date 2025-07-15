@@ -15,6 +15,8 @@
     nav a.active { font-weight: bold; text-decoration: underline; }
     .content { flex: 1; padding: 20px; }
     .eye-global { cursor: pointer; font-size: 20px; margin-bottom: 10px; display: inline-block; }
+    .filters { margin-bottom: 20px; }
+    .filters label { margin-right: 10px; }
     .cards { display: flex; gap: 20px; margin-bottom: 20px; flex-wrap: wrap; }
     .card { background: #fff; padding: 20px; flex: 1; border-radius: 8px; box-shadow: 0 0 8px rgba(0,0,0,0.1); text-align: center; }
     table { width: 100%; border-collapse: collapse; background: #fff; }
@@ -44,35 +46,48 @@
 <div class="container">
   <nav>
     <h3>Menu</h3>
-    <a id="link-dashboard" onclick="showSection('dashboard')">Dashboard</a>
-    <a id="link-reserva" class="active" onclick="showSection('reserva')">Nova Reserva</a>
+    <a id="link-dashboard" class="active" onclick="showSection('dashboard')">Dashboard</a>
+    <a id="link-reserva" onclick="showSection('reserva')">Nova Reserva</a>
   </nav>
 
   <div class="content">
     <!-- DASHBOARD -->
-    <div id="dashboard" style="display: none;">
+    <div id="dashboard">
       <span class="eye-global" onclick="toggleAll()">Mostrar/Esconder Totais</span>
+      <div class="filters">
+        <label>Data Inicial: <input type="date" id="filtroDataInicial"></label>
+        <label>Data Final: <input type="date" id="filtroDataFinal"></label>
+        <label>Status:
+          <select id="filtroStatus">
+            <option value="">Todos</option>
+            <option value="Pendente">Pendente</option>
+            <option value="Concluída">Concluída</option>
+          </select>
+        </label>
+        <button onclick="listarReservas()">Aplicar Filtros</button>
+      </div>
       <div class="cards">
         <div class="card"><h3>Total Reservas Hoje</h3><p id="totalReservas">••••••</p></div>
         <div class="card"><h3>Reservas Futuras</h3><p id="totalFuturas">••••••</p></div>
+        <div class="card"><h3>Total Geral</h3><p id="totalGeral">••••••</p></div>
       </div>
       <div class="cards">
         <div class="card"><h3>Pagamentos Antecipados</h3><p id="totalAntecipado">••••••</p></div>
-        <div class="card"><h3>Valor Estimado</h3><p id="valorTotal">••••••</p></div>
+        <div class="card"><h3>Valor Estimado (a receber)</h3><p id="valorTotal">••••••</p></div>
+        <div class="card"><h3>Valor Total Bruto</h3><p id="valorBruto">••••••</p></div>
       </div>
       <h3>Todas as Reservas</h3>
       <table id="tabelaReservas">
         <tr>
-          <th>Cliente</th><th>Data</th><th>Hora</th><th>Pessoas</th><th>Mesa</th>
-          <th>Valor</th><th>Pag.</th><th>Antecipado</th><th>Status</th><th>Ações</th>
+          <th>Cliente</th><th>Data</th><th>Hora</th><th>Pessoas</th><th>Mesa</th><th>Valor</th><th>Pag.</th><th>Antecipado</th><th>Status</th><th>Ações</th>
         </tr>
       </table>
     </div>
 
     <!-- NOVA RESERVA -->
-    <div id="reserva" style="display: block;">
+    <div id="reserva" style="display: none;">
       <div class="form-panel">
-        <h3 id="formTitulo">Nova Reserva</h3>
+        <h3>Nova Reserva</h3>
         <div class="form-row">
           <div class="form-group"><label>Cliente:</label><input type="text" id="cliente"></div>
           <div class="form-group"><label>Data:</label><input type="date" id="data"></div>
@@ -81,7 +96,7 @@
         <div class="form-row">
           <div class="form-group"><label>Pessoas:</label><input type="number" id="pessoas" min="1"></div>
           <div class="form-group"><label>Mesa:</label><input type="text" id="mesa"></div>
-          <div class="form-group"><label>Valor (R$):</label><input type="text" id="valor" placeholder="R$ 0,00"></div>
+          <div class="form-group"><label>Valor (R$):</label><input type="text" id="valor"></div>
           <div class="form-group">
             <label>Forma de Pagamento:</label>
             <select id="pagamento">
@@ -98,7 +113,7 @@
         </div>
         <div id="valorAntecipadoDiv">
           <label>Valor do Pagamento Antecipado (R$):</label>
-          <input type="text" id="valorAntecipado" placeholder="R$ 0,00">
+          <input type="text" id="valorAntecipado">
         </div>
         <div class="form-group">
           <label>Observações:</label>
@@ -112,10 +127,10 @@
 </div>
 
 <script>
-const URL_SCRIPT = 'https://script.google.com/macros/s/AKfycbyJraCPfYv16q7nt1wv1fCj__zoNmC1oJ2c0D_1bfiXXodwIfqufK5oMzOgBEpMi4EO/exec';
+const URL_SCRIPT = 'https://script.google.com/macros/s/AKfycbwZrQMUe5dhWctefkH2qH-bPfe8zPz7irXlZNDk_U_shU18HZu2RXZkjdANZ6nNGi8/exec';
 
 let valoresVisiveis = false;
-let realTotalReservas = 0, realTotalFuturas = 0, realTotalAntecipado = 0, realValorTotal = 0;
+let realTotalReservas = 0, realTotalFuturas = 0, realTotalAntecipado = 0, realValorTotal = 0, realTotalGeral = 0, realValorBruto = 0;
 
 function showSection(section) {
   document.getElementById('dashboard').style.display = section === 'dashboard' ? 'block' : 'none';
@@ -125,115 +140,54 @@ function showSection(section) {
 }
 
 function toggleAll() {
+  document.getElementById('totalReservas').innerText = valoresVisiveis ? '••••••' : realTotalReservas;
+  document.getElementById('totalFuturas').innerText = valoresVisiveis ? '••••••' : realTotalFuturas;
+  document.getElementById('totalGeral').innerText = valoresVisiveis ? '••••••' : realTotalGeral;
+  document.getElementById('totalAntecipado').innerText = valoresVisiveis ? '••••••' : "R$ " + realTotalAntecipado.toFixed(2);
+  document.getElementById('valorTotal').innerText = valoresVisiveis ? '••••••' : "R$ " + realValorTotal.toFixed(2);
+  document.getElementById('valorBruto').innerText = valoresVisiveis ? '••••••' : "R$ " + realValorBruto.toFixed(2);
   valoresVisiveis = !valoresVisiveis;
-  document.getElementById('totalReservas').innerText = valoresVisiveis ? realTotalReservas : '••••••';
-  document.getElementById('totalFuturas').innerText = valoresVisiveis ? realTotalFuturas : '••••••';
-  document.getElementById('totalAntecipado').innerText = valoresVisiveis ? "R$ " + realTotalAntecipado.toFixed(2).replace('.', ',') : '••••••';
-  document.getElementById('valorTotal').innerText = valoresVisiveis ? "R$ " + realValorTotal.toFixed(2).replace('.', ',') : '••••••';
 }
 
 function toggleAntecipadoValor() {
   document.getElementById('valorAntecipadoDiv').style.display = document.getElementById('antecipado').checked ? 'block' : 'none';
 }
 
-function formatarMoeda(input) {
-  let valor = input.value.replace(/\D/g, '');
-  if (valor === '') { input.value = ''; return; }
-  valor = (parseInt(valor, 10) / 100).toFixed(2).replace('.', ',').replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1.');
-  input.value = 'R$ ' + valor;
-}
-
-document.addEventListener('DOMContentLoaded', function() {
-  document.getElementById('valor').addEventListener('input', function() { formatarMoeda(this); });
-  document.getElementById('valorAntecipado').addEventListener('input', function() { formatarMoeda(this); });
-});
-
-function salvarOuEditar() {
-  const cliente = document.getElementById('cliente').value.trim();
-  if (!cliente) return alert("Preencha o Cliente");
-  const dataForm = new URLSearchParams();
-  dataForm.append('tipoFormulario', document.getElementById('clienteOriginal').value ? 'Editar' : 'Reserva');
-  dataForm.append('ClienteOriginal', document.getElementById('clienteOriginal').value);
-  dataForm.append('Cliente', cliente);
-  dataForm.append('Data', document.getElementById('data').value);
-  dataForm.append('Hora', document.getElementById('hora').value);
-  dataForm.append('Pessoas', document.getElementById('pessoas').value);
-  dataForm.append('Mesa', document.getElementById('mesa').value);
-  dataForm.append('Valor', document.getElementById('valor').value.replace(/\D/g, '')/100);
-  dataForm.append('FormaPagamento', document.getElementById('pagamento').value);
-  dataForm.append('Antecipado', document.getElementById('antecipado').checked ? 'Sim' : 'Não');
-  dataForm.append('ValorAntecipado', document.getElementById('valorAntecipado').value.replace(/\D/g, '')/100);
-  dataForm.append('Observacoes', document.getElementById('obs').value);
-  dataForm.append('Status', 'Pendente');
-  fetch(URL_SCRIPT, { method: 'POST', body: dataForm }).then(() => { alert("Salvo!"); listarReservas(); });
-}
-
-function liquidarReserva(cliente) {
-  if (!confirm(`Liquidar reserva de ${cliente}?`)) return;
-  const dataForm = new URLSearchParams();
-  dataForm.append('tipoFormulario', 'Liquidar');
-  dataForm.append('Cliente', cliente);
-  fetch(URL_SCRIPT, { method: 'POST', body: dataForm }).then(() => listarReservas());
-}
-
-function reabrirReserva(cliente) {
-  if (!confirm(`Reabrir reserva de ${cliente}?`)) return;
-  const dataForm = new URLSearchParams();
-  dataForm.append('tipoFormulario', 'Reabrir');
-  dataForm.append('Cliente', cliente);
-  fetch(URL_SCRIPT, { method: 'POST', body: dataForm }).then(() => listarReservas());
-}
-
-function editarReserva(cliente) {
-  fetch(URL_SCRIPT).then(r => r.json()).then(data => {
-    const reserva = data.find(row => row[1] === cliente);
-    if (reserva) {
-      document.getElementById('cliente').value = reserva[1];
-      document.getElementById('data').value = reserva[2].substring(0,10);
-      document.getElementById('hora').value = reserva[3];
-      document.getElementById('pessoas').value = reserva[4];
-      document.getElementById('mesa').value = reserva[5];
-      document.getElementById('valor').value = 'R$ ' + parseFloat(reserva[6]).toFixed(2).replace('.', ',');
-      document.getElementById('pagamento').value = reserva[7];
-      document.getElementById('antecipado').checked = reserva[8] === "Sim";
-      toggleAntecipadoValor();
-      if (reserva[8] === "Sim") document.getElementById('valorAntecipado').value = 'R$ ' + parseFloat(reserva[9]).toFixed(2).replace('.', ',');
-      document.getElementById('obs').value = reserva[10];
-      document.getElementById('clienteOriginal').value = reserva[1];
-      showSection('reserva');
-    }
-  });
-}
-
 function listarReservas() {
-  const tabela = document.getElementById('tabelaReservas');
-  tabela.innerHTML = `<tr><th>Cliente</th><th>Data</th><th>Hora</th><th>Pessoas</th><th>Mesa</th><th>Valor</th><th>Pag.</th><th>Antecipado</th><th>Status</th><th>Ações</th></tr>`;
+  const fi = document.getElementById('filtroDataInicial').value;
+  const ff = document.getElementById('filtroDataFinal').value;
+  const fs = document.getElementById('filtroStatus').value;
+
   fetch(URL_SCRIPT).then(r => r.json()).then(data => {
-    let totalHoje = 0, totalFuturas = 0, totalAntecipado = 0, valorTotal = 0;
-    const hoje = new Date().toISOString().slice(0,10);
-    data.forEach(row => {
-      const dataReserva = row[2] ? row[2].substring(0,10) : '';
+    let hoje = new Date().toISOString().slice(0,10);
+    let tHoje=0,tFut=0,tAnte=0,vTotal=0,tGeral=0,vBruto=0;
+
+    const tabela = document.getElementById('tabelaReservas');
+    tabela.innerHTML = `<tr><th>Cliente</th><th>Data</th><th>Hora</th><th>Pessoas</th><th>Mesa</th><th>Valor</th><th>Pag.</th><th>Antecipado</th><th>Status</th><th>Ações</th></tr>`;
+
+    data.forEach(row=>{
+      const dr = row[2]?.substring(0,10) || '';
+      if (fi && dr < fi) return; if (ff && dr > ff) return; if (fs && row[11] != fs) return;
+      const val = parseFloat(row[6] || 0);
+      const ant = row[8]==="Sim"?parseFloat(row[9]||0):0;
+      const rest = val-ant;
+
       const tr = tabela.insertRow();
-      tr.insertCell(0).innerText = row[1];
-      tr.insertCell(1).innerText = dataReserva;
-      tr.insertCell(2).innerText = row[3];
-      tr.insertCell(3).innerText = row[4];
-      tr.insertCell(4).innerText = row[5];
-      tr.insertCell(5).innerText = 'R$ ' + parseFloat(row[6]).toFixed(2).replace('.', ',');
-      tr.insertCell(6).innerText = row[7];
-      tr.insertCell(7).innerText = row[8];
+      tr.insertCell(0).innerText = row[1]; tr.insertCell(1).innerText = dr;
+      tr.insertCell(2).innerText = row[3]; tr.insertCell(3).innerText = row[4];
+      tr.insertCell(4).innerText = row[5]; tr.insertCell(5).innerText = "R$ "+val.toFixed(2);
+      tr.insertCell(6).innerText = row[7]; tr.insertCell(7).innerText = ant?"Sim - R$ "+ant.toFixed(2):"Não";
       tr.insertCell(8).innerText = row[11];
-      tr.insertCell(9).innerHTML = `<button class="btn btn-edit" onclick="editarReserva('${row[1]}')">Editar</button>
-        <button class="btn btn-liquidar" onclick="liquidarReserva('${row[1]}')">Liquidar</button>
-        <button class="btn btn-reabrir" onclick="reabrirReserva('${row[1]}')">Reabrir</button>`;
-      valorTotal += parseFloat(row[6] || 0);
-      if (dataReserva === hoje) totalHoje++; else totalFuturas++;
-      if (row[8] === "Sim") totalAntecipado += parseFloat(row[9] || 0);
+      let acoes = `<button class="btn btn-edit" onclick="editarReserva('${row[1]}')">Editar</button>`;
+      if (row[11]==="Pendente") acoes+=` <button class="btn btn-liquidar" onclick="liquidarReserva('${row[1]}')">Liquidar</button>`;
+      if (row[11]==="Concluída") acoes+=` <button class="btn btn-reabrir" onclick="reabrirReserva('${row[1]}')">Reabrir</button>`;
+      tr.insertCell(9).innerHTML = acoes;
+
+      vBruto+=val; vTotal+=rest; tAnte+=ant; tGeral++;
+      if (dr===hoje) tHoje++; else tFut++;
     });
-    realTotalReservas = totalHoje;
-    realTotalFuturas = totalFuturas;
-    realTotalAntecipado = totalAntecipado;
-    realValorTotal = valorTotal;
+
+    realTotalReservas=tHoje; realTotalFuturas=tFut; realTotalAntecipado=tAnte; realValorTotal=vTotal; realTotalGeral=tGeral; realValorBruto=vBruto;
     toggleAll();
   });
 }
